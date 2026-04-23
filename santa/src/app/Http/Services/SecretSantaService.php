@@ -10,7 +10,6 @@ class SecretSantaService
 {
     public function generate(): array
     {
-        // Получаем пользователей
         $users = User::all();
 
         if ($users->count() < 2) {
@@ -18,18 +17,13 @@ class SecretSantaService
         }
 
         $users = $users->shuffle();
-
-        // max попыток чтобы не попасть в дедлок
         $maxAttempts = 10;
 
         for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
-
             $shuffled = $users->shuffle();
-
             $pairs = $this->makeRingPairs($shuffled);
 
             if ($this->isValidPairs($pairs)) {
-                // Все ок
                 return $pairs;
             }
         }
@@ -40,12 +34,11 @@ class SecretSantaService
     private function makeRingPairs(Collection $users): array
     {
         $pairs = [];
-
         $count = count($users);
 
         for ($i = 0; $i < $count; $i++) {
             $giver = $users[$i];
-            $receiver = $users[($i + 1) % $count]; // кольцо
+            $receiver = $users[($i + 1) % $count];
             $pairs[] = [$giver, $receiver];
         }
 
@@ -55,11 +48,10 @@ class SecretSantaService
     private function isValidPairs(array $pairs): bool
     {
         foreach ($pairs as [$giver, $receiver]) {
-
             if ($giver->id === $receiver->id) {
                 return false;
             }
-            // проверяем метки ограничений
+
             $restricted = $giver->restrictedUsers()->pluck('restricted_user_id')->toArray();
 
             if (in_array($receiver->id, $restricted)) {
@@ -72,7 +64,7 @@ class SecretSantaService
 
     public function savePairs(array $pairs)
     {
-        SantaPair::truncate(); // сбрасываем предыдущие пары
+        SantaPair::truncate();
 
         foreach ($pairs as [$giver, $receiver]) {
             SantaPair::create([
